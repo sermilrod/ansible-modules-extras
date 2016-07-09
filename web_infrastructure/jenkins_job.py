@@ -328,12 +328,12 @@ def jenkins_builder(module):
 def main():
     module = AnsibleModule(
         argument_spec = dict(
-            config_file = dict(required=True),
+            config_file = dict(required=True, type='path'),
             name        = dict(required=True),
-            password    = dict(required=False),
-            port        = dict(required=False, default=80),
+            password    = dict(required=False, no_log=True),
+            port        = dict(required=False, default=80, type='int'),
             state       = dict(required=False, default='present', choices=['present', 'absent', 'disabled']),
-            token       = dict(required=False),
+            token       = dict(required=False, no_log=True),
             url         = dict(required=True),
             user        = dict(required=False)
         ),
