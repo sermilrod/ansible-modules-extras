@@ -224,20 +224,22 @@ class Jenkins:
     def reconfig_job(self, module):
         changed = False
         if self.configuration_changed():
-            try:
-                self.server.reconfig_job(self.name, xml_to_string(self.config_file))
-                changed = True
-            except Exception:
-                e = get_exception()
-                module.fail_json(msg='Unable to reconfigure job, %s for %s' % (str(e), self.jenkins_url))
+            changed = True
+            if not module.check_mode:
+                try:
+                    self.server.reconfig_job(self.name, xml_to_string(self.config_file))
+                except Exception:
+                    e = get_exception()
+                    module.fail_json(msg='Unable to reconfigure job, %s for %s' % (str(e), self.jenkins_url))
 
         module.exit_json(changed=changed, name=self.name, state=self.state, url=self.jenkins_url)
 
     def create_job(self, module):
         changed = False
         try:
-            self.server.create_job(self.name, xml_to_string(self.config_file))
             changed = True
+            if not module.check_mode:
+                self.server.create_job(self.name, xml_to_string(self.config_file))
         except Exception:
             e = get_exception()
             module.fail_json(msg='Unable to create job, %s for %s' % (str(e), self.jenkins_url))
@@ -247,12 +249,13 @@ class Jenkins:
     def delete_job(self, module):
         changed = False
         if self.job_exists(module):
-            try:
-                self.server.delete_job(self.name)
-                changed = True
-            except Exception:
-                e = get_exception()
-                module.fail_json(msg='Unable to delete job, %s for %s' % (str(e), self.jenkins_url))
+            changed = True
+            if not module.check_mode:
+                try:
+                    self.server.delete_job(self.name)
+                except Exception:
+                    e = get_exception()
+                    module.fail_json(msg='Unable to delete job, %s for %s' % (str(e), self.jenkins_url))
 
         module.exit_json(changed=changed, name=self.name, state=self.state, url=self.jenkins_url)
 
@@ -262,8 +265,9 @@ class Jenkins:
             status = self.get_job_status(module)
             try:
                 if status != "disabled":
-                    self.server.disable_job(self.name)
                     changed = True
+                    if not module.check_mode:
+                        self.server.disable_job(self.name)
             except Exception:
                 e = get_exception()
                 module.fail_json(msg='Unable to disable job, %s for %s' % (str(e), self.jenkins_url))
@@ -316,7 +320,7 @@ def main():
         ),
         required_one_of = [['password', 'token']],
         mutually_exclusive = [['password', 'token']],
-        supports_check_mode=False,
+        supports_check_mode=True,
     )
 
     test_dependencies(module)
