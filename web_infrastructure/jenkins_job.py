@@ -307,7 +307,7 @@ def xml_to_string(source):
     return ET.tostring(ET.parse(source).getroot())
 
 def jenkins_builder(module):
-    if module.params.get('name') and module.params.get('state') and module.params.get('url'):
+    if module.params.get('name') and module.params.get('config_file') and module.params.get('url'):
         return Jenkins(
             module.params.get('config_file'),
             module.params.get('name'),
@@ -319,9 +319,9 @@ def jenkins_builder(module):
             module.params.get('user')
         )
     else:
-        module.fail_json(msg='name, state, url are required: name=%s, state=%s, url=%s' % (
+        module.fail_json(msg='name, state, url are required: name=%s, config_file=%s, url=%s' % (
                             module.params.get('name'),
-                            module.params.get('state'),
+                            module.params.get('config_file'),
                             module.params.get('url'),
                             str(e)))
 
