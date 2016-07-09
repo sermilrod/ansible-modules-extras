@@ -38,24 +38,21 @@ options:
     description:
       - Password to authenticate with the Jenkins server.
     required: false
-  port:
-    description:
-      - Port where the Jenkins server is listening.
-    required: false
-    default: 80
   state:
     description:
       - Action to take with the Jenkins job.
-    required: true
+    required: false
     choices: ['present', 'absent', 'disabled']
+    default: present
   token:
     description:
       - API token used to authenticate alternatively to password.
-    required: true
+    required: false
   url:
     description:
       - Url where the Jenkins server is accessible.
     required: false
+    default: http://localhost:8080
   user:
     description:
        - User to authenticate with the Jenkins server.
@@ -68,9 +65,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     password: admin
-    port: 8080
     state: present
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # Create a jenkins job using the token
@@ -78,9 +74,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     token: asdfasfasfasdfasdfadfasfasdfasdfc
-    port: 8080
     state: present
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # Delete a jenkins job using basic authentication
@@ -88,9 +83,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     password: admin
-    port: 8080
     state: absent
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # Delete a jenkins job using the token
@@ -98,9 +92,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     token: asdfasfasfasdfasdfadfasfasdfasdfc
-    port: 8080
     state: present
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # Disable a jenkins job using basic authentication
@@ -108,9 +101,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     password: admin
-    port: 8080
     state: disabled
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # Disable a jenkins job using the token
@@ -118,9 +110,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     token: asdfasfasfasdfasdfadfasfasdfasdfc
-    port: 8080
     state: disabled
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # To re-enable a job just make it be present
@@ -128,9 +119,8 @@ EXAMPLES = '''
     config_file: /path/to/config.xml
     name: test
     password: admin
-    port: 8080
     state: present
-    url: localhost
+    url: "http://localhost:8080"
     user: admin
 
 # A production ready example
@@ -145,9 +135,8 @@ EXAMPLES = '''
     config_file: /tmp/test-job-config.xml
     name: test-job
     token: abcdefghijklmnopqrstuvwxyz
-    port: 443
     state: present
-    url: jenkins.mydomain.com
+    url: "https://jenkins.mydomain.com"
     user: my_user
 '''
 
@@ -171,25 +160,15 @@ except ImportError:
     python_lxml_installed = False
 
 class Jenkins:
-    def __init__(self, config_file, name, password, port, state, token, url, user):
+    def __init__(self, config_file, name, password, state, token, url, user):
         self.config_file = config_file
         self.name = name
         self.password = password
-        self.port = port
         self.state = state
         self.token = token
-        self.url = url
         self.user = user
-        self.jenkins_url = self.build_jenkins_url()
+        self.jenkins_url = url
         self.server = self.get_jenkins_connection()
-
-    def build_jenkins_url(self):
-        if int(self.port) == 443:
-            return 'https://' + self.url
-        elif int(self.port) == 80:
-            return 'http://' + self.url
-        else:
-            return 'http://' + self.url + ':' + self.port
 
     def get_jenkins_connection(self):
         try:
@@ -312,7 +291,6 @@ def jenkins_builder(module):
             module.params.get('config_file'),
             module.params.get('name'),
             module.params.get('password'),
-            module.params.get('port'),
             module.params.get('state'),
             module.params.get('token'),
             module.params.get('url'),
@@ -331,12 +309,13 @@ def main():
             config_file = dict(required=True, type='path'),
             name        = dict(required=True),
             password    = dict(required=False, no_log=True),
-            port        = dict(required=False, default=80, type='int'),
             state       = dict(required=False, default='present', choices=['present', 'absent', 'disabled']),
             token       = dict(required=False, no_log=True),
-            url         = dict(required=True),
+            url         = dict(required=False, default="http://localhost:8080"),
             user        = dict(required=False)
         ),
+        required_one_of = [['password', 'token']],
+        mutually_exclusive = [['password', 'token']],
         supports_check_mode=False,
     )
 
