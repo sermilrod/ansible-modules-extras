@@ -20,7 +20,6 @@ short_description: Manage jenkins jobs
 description:
     - Manage Jenkins jobs by using Jenkins REST API
 requirements:
-  - "python >= 2.7.6"
   - "python-jenkins >= 0.4.12"
   - "lxml >= 3.3.3"
 version_added: "2.2"
@@ -143,20 +142,16 @@ EXAMPLES = '''
 RETURN = '''
 '''
 
-import os
-
 try:
     import jenkins
     python_jenkins_installed = True
 except ImportError:
-    e = get_exception()
     python_jenkins_installed = False
 
 try:
     from lxml import etree as ET
     python_lxml_installed = True
 except ImportError:
-    e = get_exception()
     python_lxml_installed = False
 
 class Jenkins:
