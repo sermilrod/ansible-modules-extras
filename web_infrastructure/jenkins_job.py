@@ -313,7 +313,6 @@ def main():
             url         = dict(required=False, default="http://localhost:8080"),
             user        = dict(required=False)
         ),
-        required_one_of = [['password', 'token']],
         mutually_exclusive = [['password', 'token']],
         supports_check_mode=True,
     )
