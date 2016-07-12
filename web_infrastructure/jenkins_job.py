@@ -140,6 +140,22 @@ EXAMPLES = '''
 '''
 
 RETURN = '''
+---
+name:
+  description: Name of the jenkins job.
+  returned: success
+  type: string
+  sample: test-job
+state:
+  description: State of the jenkins job.
+  returned: success
+  type: string
+  sample: disabled
+url:
+  description: Url to connect to the Jenkins server.
+  returned: success
+  type: string
+  sample: https://jenkins.mydomain.com
 '''
 
 try:
@@ -285,22 +301,15 @@ def xml_to_string(source):
     return ET.tostring(ET.parse(source).getroot())
 
 def jenkins_builder(module):
-    if module.params.get('name') and module.params.get('config_file') and module.params.get('url'):
-        return Jenkins(
-            module.params.get('config_file'),
-            module.params.get('name'),
-            module.params.get('password'),
-            module.params.get('state'),
-            module.params.get('token'),
-            module.params.get('url'),
-            module.params.get('user')
-        )
-    else:
-        module.fail_json(msg='name, state, url are required: name=%s, config_file=%s, url=%s' % (
-                            module.params.get('name'),
-                            module.params.get('config_file'),
-                            module.params.get('url'),
-                            str(e)))
+    return Jenkins(
+        module.params.get('config_file'),
+        module.params.get('name'),
+        module.params.get('password'),
+        module.params.get('state'),
+        module.params.get('token'),
+        module.params.get('url'),
+        module.params.get('user')
+    )
 
 def main():
     module = AnsibleModule(
