@@ -28,7 +28,11 @@ options:
   config_file:
     description:
       - Absolute path to the config.xml for an specific job.
-    required: true
+    required: false
+  config:
+    description:
+      - config.xml file to use as job config within your Ansible repo.
+    required: false
   name:
     description:
       - Name of the Jenkins job.
@@ -70,7 +74,7 @@ EXAMPLES = '''
 
 # Create a jenkins job using the token
 - jenkins_job:
-    config_file: /path/to/config.xml
+    config: "{{ lookup('template', 'templates/test.xml.j2') }}"
     name: test
     token: asdfasfasfasdfasdfadfasfasdfasdfc
     state: present
@@ -79,7 +83,7 @@ EXAMPLES = '''
 
 # Delete a jenkins job using basic authentication
 - jenkins_job:
-    config_file: /path/to/config.xml
+    config: "{{ lookup('template', 'templates/test.xml.j2') }}"
     name: test
     password: admin
     state: absent
@@ -97,7 +101,7 @@ EXAMPLES = '''
 
 # Disable a jenkins job using basic authentication
 - jenkins_job:
-    config_file: /path/to/config.xml
+    config: "{{ lookup('template', 'templates/test.xml.j2') }}"
     name: test
     password: admin
     state: disabled
@@ -115,14 +119,14 @@ EXAMPLES = '''
 
 # To re-enable a job just make it be present
 - jenkins_job:
-    config_file: /path/to/config.xml
+    config: "{{ lookup('template', 'templates/test.xml.j2') }}"
     name: test
     password: admin
     state: present
     url: "http://localhost:8080"
     user: admin
 
-# A production ready example
+# A production ready example using the config_file option
 - template:
     src: test-job.xml.j2
     dest: /tmp/test-job-config.xml
@@ -132,6 +136,15 @@ EXAMPLES = '''
 
 - jenkins_job:
     config_file: /tmp/test-job-config.xml
+    name: test-job
+    token: abcdefghijklmnopqrstuvwxyz
+    state: present
+    url: "https://jenkins.mydomain.com"
+    user: my_user
+
+# A production ready example using the config option
+- jenkins_job:
+    config: "{{ lookup('template', 'templates/test-job.xml.j2') }}"
     name: test-job
     token: abcdefghijklmnopqrstuvwxyz
     state: present
@@ -171,8 +184,9 @@ except ImportError:
     python_lxml_installed = False
 
 class Jenkins:
-    def __init__(self, config_file, name, password, state, token, url, user):
+    def __init__(self, config_file, config, name, password, state, token, url, user):
         self.config_file = config_file
+        self.config = config
         self.name = name
         self.password = password
         self.state = state
@@ -217,9 +231,15 @@ class Jenkins:
         else:
             self.disable_job(module)
 
+    def get_config(self):
+        if self.config_file:
+            return xml_to_string(self.config_file)
+        else:
+            return job_config_to_string(self.config)
+
     def configuration_changed(self):
         changed = False
-        config_file = xml_to_string(self.config_file)
+        config_file = self.get_config()
         machine_file = job_config_to_string(self.server.get_job_config(self.name).encode('utf-8'))
         if not machine_file == config_file:
             changed = True
@@ -238,7 +258,7 @@ class Jenkins:
             changed = True
             if not module.check_mode:
                 try:
-                    self.server.reconfig_job(self.name, xml_to_string(self.config_file))
+                    self.server.reconfig_job(self.name, self.get_config())
                 except Exception:
                     e = get_exception()
                     module.fail_json(msg='Unable to reconfigure job, %s for %s' % (str(e), self.jenkins_url))
@@ -250,7 +270,7 @@ class Jenkins:
         try:
             changed = True
             if not module.check_mode:
-                self.server.create_job(self.name, xml_to_string(self.config_file))
+                self.server.create_job(self.name, self.get_config())
         except Exception:
             e = get_exception()
             module.fail_json(msg='Unable to create job, %s for %s' % (str(e), self.jenkins_url))
@@ -303,6 +323,7 @@ def xml_to_string(source):
 def jenkins_builder(module):
     return Jenkins(
         module.params.get('config_file'),
+        module.params.get('config'),
         module.params.get('name'),
         module.params.get('password'),
         module.params.get('state'),
@@ -314,7 +335,8 @@ def jenkins_builder(module):
 def main():
     module = AnsibleModule(
         argument_spec = dict(
-            config_file = dict(required=True, type='path'),
+            config_file = dict(required=False, type='path'),
+            config      = dict(required=False),
             name        = dict(required=True),
             password    = dict(required=False, no_log=True),
             state       = dict(required=False, default='present', choices=['present', 'absent', 'disabled']),
@@ -322,7 +344,8 @@ def main():
             url         = dict(required=False, default="http://localhost:8080"),
             user        = dict(required=False)
         ),
-        mutually_exclusive = [['password', 'token']],
+        required_one_of = [['config_file', 'config']],
+        mutually_exclusive = [['config_file', 'config'], ['password', 'token']],
         supports_check_mode=True,
     )
 
