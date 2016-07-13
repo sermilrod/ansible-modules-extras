@@ -254,14 +254,14 @@ class Jenkins:
 
     def reconfig_job(self, module):
         changed = False
-        if self.configuration_changed():
-            changed = True
-            if not module.check_mode:
-                try:
+        try:
+            if self.configuration_changed():
+                changed = True
+                if not module.check_mode:
                     self.server.reconfig_job(self.name, self.get_config())
-                except Exception:
-                    e = get_exception()
-                    module.fail_json(msg='Unable to reconfigure job, %s for %s' % (str(e), self.jenkins_url))
+        except Exception:
+            e = get_exception()
+            module.fail_json(msg='Unable to reconfigure job, %s for %s' % (str(e), self.jenkins_url))
 
         module.exit_json(changed=changed, name=self.name, state=self.state, url=self.jenkins_url)
 
