@@ -33,7 +33,6 @@ options:
     description:
       - Action to take with the Jenkins job (enable/disable).
     required: false
-    choices: [True, False, 'yes', 'no']
   name:
     description:
       - Name of the Jenkins job.
@@ -305,7 +304,7 @@ def main():
             name        = dict(required=True),
             password    = dict(required=False, no_log=True),
             state       = dict(required=True,  choices=['present', 'absent']),
-            enable      = dict(required=False, type='bool', choices=[True, False, 'yes', 'no']),
+            enable      = dict(required=False, type='bool'),
             token       = dict(required=False, no_log=True),
             url         = dict(required=False, default="http://localhost:8080"),
             user        = dict(required=False)
